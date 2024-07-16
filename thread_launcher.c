@@ -1,30 +1,22 @@
 #include "thread_launcher.h"
+#include "concurrent_list.h"
 
 #include <pthread.h>
 #include <stdio.h>
-#include <string.h>
-#include <time.h>
-
-// Format a nanosecond timestamp into dest
-static char *timestamp_string(char *dest);
 
 void *start_function(void *_context) {
   struct thread_context *context;
-  char tsbuf[20];
+  const hashRecord *found;
+  char tsbuf[TIMESTAMP_MAX];
 
   // Cast argument to proper type
   context = (struct thread_context *)_context;
 
-  /* TODO implement each command
-   * we can refactor each one into a different
-   * function if it makes the code more readable
-   */
   switch(context->cmd.type) {
   case CMD_INSERT:
     timestamp_string(tsbuf);
     fprintf(context->state->outf, "%s,INSERT,%s,%d\n", tsbuf, context->cmd.name, context->cmd.value);
-
-    /* rest of the code goes here */
+    list_insert(&context->state->hashtable, context->cmd.name, context->cmd.value);
 
     // decrease the count of remaining INSERT commands
     pthread_mutex_lock(&context->state->inserts_mtx);
@@ -48,35 +40,28 @@ void *start_function(void *_context) {
     }
     pthread_mutex_unlock(&context->state->inserts_mtx);
 
-    /* rest of the code goes here */
-
     timestamp_string(tsbuf);
     fprintf(context->state->outf, "%s,DELETE,%s\n", tsbuf, context->cmd.name);
+    list_delete(&context->state->hashtable, context->cmd.name);
     break;
 
   case CMD_SEARCH:
     timestamp_string(tsbuf);
     fprintf(context->state->outf, "%s,SEARCH,%s\n", tsbuf, context->cmd.name);
+
+    found = list_search(&context->state->hashtable, context->cmd.name);
+    if(found) {
+      print_record(context->state->outf, found);
+    }
     break;
 
   case CMD_PRINT:
+    for(found = context->state->hashtable.head; found != NULL; found = found->next) {
+        print_record(context->state->outf, found);
+    }
     break;
   }
 
   // Terminates the thread
   return NULL;
-}
-
-char *timestamp_string(char *dest) {
-  struct timespec ts;
-
-  if(clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
-    // error retrieving time
-    strcpy(dest, "unknown");
-  } else {
-    // format timestamp with nanosecond precision
-    sprintf(dest, "%ld.%09ld", (long)ts.tv_sec, (long)ts.tv_nsec);
-  }
-
-  return dest;
 }

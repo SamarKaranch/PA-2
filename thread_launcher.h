@@ -2,11 +2,13 @@
 
 #include <pthread.h>
 #include "command_parser.h"
+#include "concurrent_list.h"
 
 struct program_state {
   // opened output file
   FILE *outf;
-
+  // the concurrent list/hashtable
+  struct list hashtable;
   /* These three are used to count how many
    * threads performing an INSERT command are
    * left, because any DELETE commands must be run

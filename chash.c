@@ -1,5 +1,6 @@
 #include "command_parser.h"
 #include "thread_launcher.h"
+#include "concurrent_list.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@ int main(void) {
   struct command cmd;
   struct program_state state;
   struct thread_context *threads;
+  hashRecord *node, *next;
   FILE *file, *outfile;
   int err, i, thread_count;
 
@@ -32,6 +34,7 @@ int main(void) {
   // populate the program state structure
   state.outf = outfile;
   state.inserts_remaining = 0;
+  list_init(&state.hashtable, &state);
   pthread_mutex_init(&state.inserts_mtx, NULL);
   pthread_cond_init(&state.inserts_cv, NULL);
 
@@ -81,6 +84,16 @@ int main(void) {
   // join and wait for all threads to complete
   for(i = 0; i < thread_count; i++) {
     pthread_join(threads[i].pthread, NULL);
+  }
+
+  // Final print and destroy list nodes
+  fprintf(outfile, "Number of lock acquisitions: %d\n", state.hashtable.count_acquired);
+  fprintf(outfile, "Number of lock releases: %d\n", state.hashtable.count_released);
+  for(node = state.hashtable.head; node != NULL; node = next) {
+    next = node->next;
+    print_record(outfile, node);
+    free(node);
+    node = next;
   }
 
   free(threads);
