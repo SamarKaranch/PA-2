@@ -15,6 +15,7 @@ int get_next_command(FILE *file, struct command *res) {
   linesz = 0;
   if(getline(&lineptr, &linesz, file) == -1) {
     // Possibly end of file
+    free(lineptr);
     return 0;
   }
 
@@ -26,6 +27,7 @@ int get_next_command(FILE *file, struct command *res) {
 
   if(!first || !second || !third) {
     // At least one word is empty - this is an error
+    free(lineptr);
     return -1;
   }
 
@@ -35,6 +37,7 @@ int get_next_command(FILE *file, struct command *res) {
     // value is provided in the second word.
     res->type = CMD_THREADS;
     res->value = atoi(second);
+    free(lineptr);
     return 1;
   }
   else if(strcmp(first, "insert") == 0) {
@@ -50,6 +53,7 @@ int get_next_command(FILE *file, struct command *res) {
     res->type = CMD_PRINT;
   } else {
     // Unknown type - error
+    free(lineptr);
     return -1;
   }
 

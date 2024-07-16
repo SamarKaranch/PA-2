@@ -97,5 +97,7 @@ int main(void) {
   }
 
   free(threads);
+  fclose(outfile);
+  fclose(file);
   return 0;
 }
