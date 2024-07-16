@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-//
+
 // Assignment says name could be up to 50 chars long
 #define NAME_MAX 51
 

@@ -25,7 +25,7 @@ int main(void) {
   // open the output file
   outfile = fopen(OUTPUT_FILENAME, "w");
   if(outfile == NULL) {
-    fputs("error opening output file", stderr);
+    fputs("error opening output file\n", stderr);
     return 0;
   }
 
@@ -41,7 +41,7 @@ int main(void) {
   if(err != 1 || cmd.type != CMD_THREADS) {
     // could not parse the first command,
     // or is not the "threads" command
-    fputs("invalid input file", stderr);
+    fputs("invalid input file\n", stderr);
     return 0;
   }
 
@@ -49,7 +49,7 @@ int main(void) {
   thread_count = cmd.value;
   threads = calloc(thread_count, sizeof(struct thread_context));
   if(threads == NULL) {
-    fputs("bad malloc", stderr);
+    fputs("bad malloc\n", stderr);
     return 0;
   }
 
@@ -67,7 +67,7 @@ int main(void) {
   }
   if(i != thread_count) {
     // we couldn't read all the commands from the file
-    fputs("error parsing file", stderr);
+    fputs("error parsing file\n", stderr);
     return 0;
   }
 

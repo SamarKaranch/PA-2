@@ -12,7 +12,7 @@ void *start_function(void *_context) {
   struct thread_context *context;
   char tsbuf[20];
 
-  // Cast argument to propper type
+  // Cast argument to proper type
   context = (struct thread_context *)_context;
 
   /* TODO implement each command
