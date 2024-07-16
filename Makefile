@@ -2,7 +2,7 @@
 CFLAGS ?= -Wall -Wextra
 
 # Corresponding object file for each .c file
-OBJECTS = chash.o command_parser.o
+OBJECTS = chash.o command_parser.o thread_launcher.o
 
 # Default target
 .PHONY: all

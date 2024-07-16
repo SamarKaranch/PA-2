@@ -58,5 +58,6 @@ int get_next_command(FILE *file, struct command *res) {
   strncpy(res->name, second, NAME_MAX - 1);
   res->value = atoi(third);
 
+  free(lineptr);
   return 1;
 }

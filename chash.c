@@ -1,40 +1,88 @@
 #include "command_parser.h"
+#include "thread_launcher.h"
 
+#include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define INPUT_FILENAME "commands.txt"
+#define OUTPUT_FILENAME "output.txt"
 
 int main(void) {
   struct command cmd;
-  int err;
+  struct program_state state;
+  struct thread_context *threads;
+  FILE *file, *outfile;
+  int err, i, thread_count;
 
-  // Open the command for reading
-  FILE *file;
+  // open the file for reading
   file = fopen(INPUT_FILENAME, "r");
   if(file == NULL) {
-    fputs("error opening file\n", stderr);
+    fputs("error opening input file\n", stderr);
     return 0;
   }
 
-  while((err = get_next_command(file, &cmd)) == 1) {
-    /* Testing */
-    printf("got command %d %s %d\n", cmd.type, cmd.name, cmd.value);
+  // open the output file
+  outfile = fopen(OUTPUT_FILENAME, "w");
+  if(outfile == NULL) {
+    fputs("error opening output file", stderr);
+    return 0;
+  }
 
-    /* TODO implement each function */
-    /* Name is in cmd.name */
-    /* Integer thread count or salary is in cmd.value */
-    switch(cmd.value) {
-    case CMD_THREADS:
-    case CMD_INSERT:
-    case CMD_DELETE:
-    case CMD_SEARCH:
-    case CMD_PRINT:
-      break;
+  // populate the program state structure
+  state.outf = outfile;
+  state.inserts_remaining = 0;
+  pthread_mutex_init(&state.inserts_mtx, NULL);
+  pthread_cond_init(&state.inserts_cv, NULL);
+
+  // first command must be the "threads" command
+  // providing the number of remaining commands
+  err = get_next_command(file, &cmd);
+  if(err != 1 || cmd.type != CMD_THREADS) {
+    // could not parse the first command,
+    // or is not the "threads" command
+    fputs("invalid input file", stderr);
+    return 0;
+  }
+
+  // allocate enough threads
+  thread_count = cmd.value;
+  threads = calloc(thread_count, sizeof(struct thread_context));
+  if(threads == NULL) {
+    fputs("bad malloc", stderr);
+    return 0;
+  }
+
+  // read remaining commands
+  for(i = 0; i < thread_count && get_next_command(file, &cmd) == 1; i++) {
+    // initialize thread context
+    threads[i].cmd = cmd;
+    threads[i].state = &state;
+    // we must keep track of the total remaining
+    // INSERT commands because DELETE commands
+    // will wait for all of them to complete
+    if(cmd.type == CMD_INSERT) {
+      state.inserts_remaining += 1;
     }
   }
-  if(err == -1) {
-    fputs("error parsing file\n", stderr);
+  if(i != thread_count) {
+    // we couldn't read all the commands from the file
+    fputs("error parsing file", stderr);
+    return 0;
   }
 
+  // launch all the threads
+  for(i = 0; i < thread_count; i++) {
+    // threads will run the start_function from thread_launcher.c
+    // and will pass their context as the argument
+    pthread_create(&threads[i].pthread, NULL, start_function, (void *)&threads[i]);
+  }
+
+  // join and wait for all threads to complete
+  for(i = 0; i < thread_count; i++) {
+    pthread_join(threads[i].pthread, NULL);
+  }
+
+  free(threads);
   return 0;
 }

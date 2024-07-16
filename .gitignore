@@ -1,3 +1,4 @@
 # Do not track compilation artifacts
 chash
+output.txt
 *.o
