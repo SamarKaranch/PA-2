@@ -7,10 +7,6 @@
 #include <string.h>
 #include <time.h>
 
-void list_wlock(struct list* li);
-void list_rlock(struct list* li);
-void list_wunlock(struct list* li);
-void list_runlock(struct list* li);
 uint32_t jenkins(const uint8_t* key, size_t length);
 
 void list_init(struct list *li, struct program_state *state) {
@@ -32,7 +28,7 @@ void list_insert(struct list *li, const char* key, int value) {
   memset(new_node->name, 0, NAME_MAX);
   strncpy(new_node->name, key, NAME_MAX - 1);
   new_node->salary = value;
-  new_node->hash = jenkins((const uint8_t *)key, sizeof(key));
+  new_node->hash = jenkins((const uint8_t *)key, strlen(key));
   new_node->next = NULL;
 
   list_wlock(li);
@@ -67,7 +63,7 @@ void list_delete(struct list *li, const char* key) {
   list_wunlock(li);
 }
 
-const hashRecord *list_search(struct list *li, const char *key) {
+hashRecord *list_search(struct list *li, const char *key, hashRecord* result_copy) {
   uint32_t h;
   hashRecord *node;
 
@@ -77,8 +73,20 @@ const hashRecord *list_search(struct list *li, const char *key) {
   // advance until matching key
   for(node = li->head; node != NULL && node->hash != h; node = node->next) {}
 
+  // We need to make and return a copy of the node while the list is locked.
+  // We can't return a pointer to the original node on the list since that
+  // may lead to race conditions when the caller tries to read its data.
+  if(node != NULL) {
+    memcpy(result_copy, node, sizeof(hashRecord));
+    result_copy->next = NULL;
+  } else {
+    // key not found
+    list_runlock(li);
+    return NULL;
+  }
+
   list_runlock(li);
-  return node;
+  return result_copy;
 }
 
 char *timestamp_string(char *dest) {
@@ -121,19 +129,19 @@ void list_rlock(struct list* li){
 void list_wunlock(struct list* li) {
   char tsbuf[TIMESTAMP_MAX];
 
-  rwlock_release_writelock(&li->rwlock);
   li->count_released += 1;
   timestamp_string(tsbuf);
   fprintf(li->state->outf, "%s,WRITE LOCK RELEASED\n", tsbuf);
+  rwlock_release_writelock(&li->rwlock);
 }
 
 void list_runlock(struct list* li) {
   char tsbuf[TIMESTAMP_MAX];
 
-  rwlock_release_readlock(&li->rwlock);
   li->count_released += 1;
   timestamp_string(tsbuf);
   fprintf(li->state->outf, "%s,READ LOCK RELEASED\n", tsbuf);
+  rwlock_release_readlock(&li->rwlock);
 }
 
 // Source: https://en.wikipedia.org/wiki/Jenkins_hash_function

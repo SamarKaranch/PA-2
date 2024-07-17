@@ -32,7 +32,12 @@ struct list {
 void list_init(struct list *li, struct program_state *state);
 void list_insert(struct list *li, const char* key, int value);
 void list_delete(struct list *li, const char* key);
-const hashRecord *list_search(struct list *li, const char* key);
+hashRecord *list_search(struct list *li, const char* key, hashRecord *result_copy);
+
+void list_wlock(struct list* li);
+void list_rlock(struct list* li);
+void list_wunlock(struct list* li);
+void list_runlock(struct list* li);
 
 /**
  * @brief Format a timestamp string

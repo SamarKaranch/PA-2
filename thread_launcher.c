@@ -6,7 +6,7 @@
 
 void *start_function(void *_context) {
   struct thread_context *context;
-  const hashRecord *found;
+  hashRecord *found, record_copy;
   char tsbuf[TIMESTAMP_MAX];
 
   // Cast argument to proper type
@@ -49,16 +49,21 @@ void *start_function(void *_context) {
     timestamp_string(tsbuf);
     fprintf(context->state->outf, "%s,SEARCH,%s\n", tsbuf, context->cmd.name);
 
-    found = list_search(&context->state->hashtable, context->cmd.name);
-    if(found) {
+    found = list_search(&context->state->hashtable, context->cmd.name, &record_copy);
+    if(found != NULL) {
       print_record(context->state->outf, found);
+    } else {
+      fputs("No Record Found\n", context->state->outf);
     }
     break;
 
   case CMD_PRINT:
+    // Manually lock the list before iterating through the nodes
+    list_rlock(&context->state->hashtable);
     for(found = context->state->hashtable.head; found != NULL; found = found->next) {
         print_record(context->state->outf, found);
     }
+    list_runlock(&context->state->hashtable);
     break;
   }
 
