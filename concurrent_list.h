@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "rwlock.h"
@@ -22,8 +23,10 @@ struct list {
   // Read-Write lock
   rwlock_t rwlock;
   // Counters for lock acquisitions/releases
-  int count_released;
-  int count_acquired;
+  // These counters would need a mutex for themselves too!
+  // But here we're using the C11 atomic types.
+  atomic_int count_released;
+  atomic_int count_acquired;
   // Shared state - only needed for writing
   // messages to the output file.
   struct program_state *state;

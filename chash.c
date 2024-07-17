@@ -1,6 +1,6 @@
 #include "command_parser.h"
-#include "thread_launcher.h"
 #include "concurrent_list.h"
+#include "thread_launcher.h"
 
 #include <pthread.h>
 #include <stdio.h>
