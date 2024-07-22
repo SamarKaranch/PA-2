@@ -87,7 +87,7 @@ int main(void) {
   }
 
   // Final print and destroy list nodes
-  fprintf(outfile, "Number of lock acquisitions: %d\n", state.hashtable.count_acquired);
+  fprintf(outfile, "\nNumber of lock acquisitions: %d\n", state.hashtable.count_acquired);
   fprintf(outfile, "Number of lock releases: %d\n", state.hashtable.count_released);
   for(node = state.hashtable.head; node != NULL; node = next) {
     next = node->next;
